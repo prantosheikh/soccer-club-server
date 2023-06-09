@@ -1,7 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-require("dotenv").config();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 3000;
@@ -50,6 +50,9 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const usersCollections = client.db("SoccerClubDB").collection("users");
+    const instructorClassCollections = client
+      .db("SoccerClubDB")
+      .collection("instructorClass");
 
     // user related api
     // get Soccer club all user
@@ -57,10 +60,22 @@ async function run() {
       const result = await usersCollections.find().toArray();
       res.send(result);
     });
-
+    // app.get("/user", verifyJWT, async (req, res) => {
+    //   const result = await usersCollections.find().toArray();
+    //   res.send(result);
+    // });
     app.get("/instructors", async (req, res) => {
       const result = await usersCollections.find().toArray();
       res.send(result);
+    });
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "7d",
+      });
+
+      res.send({ token });
     });
 
     // Soccer club single users save
@@ -77,14 +92,6 @@ async function run() {
     });
 
     // jwt assecc token
-    app.post("/jwt", (req, res) => {
-      const user = req.body;
-      // console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "6h",
-      });
-      res.send({ token });
-    });
 
     // admin role curd oparation
     app.patch("/users/admin/:id", async (req, res) => {
@@ -97,6 +104,42 @@ async function run() {
         },
       };
       const result = await usersCollections.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // get instructors class
+    app.get("/instructorsclass", async (req, res) => {
+      const result = await instructorClassCollections.find().toArray();
+      res.send(result);
+    });
+
+    // post instructors class
+    app.post("/instructorsclas", async (req, res) => {
+      const instructorsClass = req.body;
+      // console.log(instructorsClass);
+      const result = await instructorClassCollections.insertOne(
+        instructorsClass
+      );
+      res.send(result);
+    });
+
+    // patch instructors status
+    app.patch("/instructorsclass/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $unset: {
+          status: "pending",
+          // Use an empty value to remove the field
+        },
+        $set: {
+          newStatus: "approved",
+        },
+      };
+      const result = await instructorClassCollections.updateOne(
+        filter,
+        updateDoc
+      );
       res.send(result);
     });
 
