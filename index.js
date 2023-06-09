@@ -108,13 +108,13 @@ async function run() {
     });
 
     // get instructors class
-    app.get("/instructorsclass", async (req, res) => {
+    app.get("/instructorsclass", verifyJWT, async (req, res) => {
       const result = await instructorClassCollections.find().toArray();
       res.send(result);
     });
 
     // post instructors class
-    app.post("/instructorsclas", async (req, res) => {
+    app.post("/instructorsclas", verifyJWT, async (req, res) => {
       const instructorsClass = req.body;
       // console.log(instructorsClass);
       const result = await instructorClassCollections.insertOne(
@@ -140,6 +140,35 @@ async function run() {
         filter,
         updateDoc
       );
+      res.send(result);
+    });
+
+    // patch instructors status
+    app.patch("/handleDenied/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $unset: {
+          status: " ",
+          // Use an empty value to remove the field
+        },
+        $set: {
+          deniedStatus: "Denied",
+        },
+      };
+      const result = await instructorClassCollections.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(result);
+    });
+
+    // handleDelete Class
+    app.delete("/handleDelete/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      // console.log(query);
+      const result = await instructorClassCollections.deleteOne(filter);
       res.send(result);
     });
 
