@@ -163,6 +163,22 @@ async function run() {
       res.send(result);
     });
 
+    // Denied Feedback
+    app.patch("/deniedFeedback/:id", async (req, res) => {
+      const id = req.params.id;
+      // const feedback = req.body;
+      console.log(id, feedback);
+      const filter = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          Feedback: feedback,
+        },
+      };
+      const result = instructorClassCollections.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     // handleDelete Class
     app.delete("/handleDelete/:id", async (req, res) => {
       const id = req.params.id;
