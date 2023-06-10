@@ -81,11 +81,12 @@ async function run() {
     // Soccer club single users save
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
       const query = { email: user.email };
-      const existionUser = await usersCollections.findOne(query);
-      if (existionUser) {
-        return res.send("User", { message: existionUser });
+
+      const existingUser = await usersCollections.findOne(query);
+
+      if (existingUser) {
+        return res.send({ message: " user already exists" });
       }
       const result = await usersCollections.insertOne(user);
       res.send(result);
@@ -113,6 +114,31 @@ async function run() {
       res.send(result);
     });
 
+    //  instructors class update
+    app.put("/classUpdate/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateClass = req.body;
+      console.log(updateClass.update.AvailableSeats);
+      const classes = {
+        $set: {
+          "newCalss.AvailableSeats": updateClass.update.AvailableSeats,
+          "newCalss.InstructorEmail": updateClass.update.InstructorEmail,
+          "newCalss.ClassImage": updateClass.update.ClassImage,
+          "newCalss.Price": updateClass.update.Price,
+          "newCalss.InstructorName": updateClass.update.InstructorName,
+          "newCalss.ClassName": updateClass.update.ClassName,
+        },
+      };
+      const result = await instructorClassCollections.updateOne(
+        filter,
+        classes,
+        options
+      );
+      res.send(result);
+    });
+
     // post instructors class
     app.post("/instructorsclas", verifyJWT, async (req, res) => {
       const instructorsClass = req.body;
@@ -124,16 +150,12 @@ async function run() {
     });
 
     // patch instructors status
-    app.patch("/instructorsclass/:id", async (req, res) => {
+    app.patch("/changestatus/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
-        $unset: {
-          status: "pending",
-          // Use an empty value to remove the field
-        },
         $set: {
-          newStatus: "approved",
+          status: "approved",
         },
       };
       const result = await instructorClassCollections.updateOne(
@@ -144,16 +166,12 @@ async function run() {
     });
 
     // patch instructors status
-    app.patch("/handleDenied/:id", async (req, res) => {
+    app.patch("/classDenied/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
-        $unset: {
-          status: " ",
-          // Use an empty value to remove the field
-        },
         $set: {
-          deniedStatus: "Denied",
+          status: "denied",
         },
       };
       const result = await instructorClassCollections.updateOne(
@@ -166,8 +184,8 @@ async function run() {
     // Denied Feedback
     app.patch("/deniedFeedback/:id", async (req, res) => {
       const id = req.params.id;
-      // const feedback = req.body;
-      console.log(id, feedback);
+      const feedback = req.body;
+      // console.log(id, feedback);
       const filter = { _id: new ObjectId(id) };
 
       const updateDoc = {
@@ -185,6 +203,20 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       // console.log(query);
       const result = await instructorClassCollections.deleteOne(filter);
+      res.send(result);
+    });
+
+    //  instructors my classes api
+    app.get("/myClasses", async (req, res) => {
+      let query = {};
+      const email = req.query.email;
+      console.log(email);
+
+      if (email) {
+        query = { "newCalss.InstructorEmail": email };
+      }
+      console.log(query);
+      const result = await instructorClassCollections.find(query).toArray();
       res.send(result);
     });
 
