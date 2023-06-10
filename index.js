@@ -25,7 +25,7 @@ const verifyJWT = (req, res, next) => {
     if (err) {
       return res
         .status(401)
-        .send({ error: true, message: "unauthorization access 2" });
+        .send({ error: true, message: "unauthorization access 1" });
     }
     req.decoded = decoded;
     next();
@@ -53,6 +53,9 @@ async function run() {
     const instructorClassCollections = client
       .db("SoccerClubDB")
       .collection("instructorClass");
+    const selectClassCollections = client
+      .db("SoccerClubDB")
+      .collection("classes");
 
     // user related api
     // get Soccer club all user
@@ -68,6 +71,14 @@ async function run() {
       const result = await usersCollections.find().toArray();
       res.send(result);
     });
+
+    // get all all Classes
+    app.get("/allClasses", async (req, res) => {
+      const result = await instructorClassCollections.find().toArray();
+      res.send(result);
+    });
+
+    // jwt assecc token
     app.post("/jwt", (req, res) => {
       const user = req.body;
       // console.log(user);
@@ -92,8 +103,6 @@ async function run() {
       res.send(result);
     });
 
-    // jwt assecc token
-
     // admin role curd oparation
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
@@ -107,6 +116,33 @@ async function run() {
       const result = await usersCollections.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+    //  post selecte classes
+    app.post("/seleteClass", async (req, res) => {
+      const classes = req.body;
+      const result = await selectClassCollections.insertOne(classes);
+      res.send(result);
+    });
+
+    app.get("/classes", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const decodedEmail = req.decoded.email;
+      console.log(decodedEmail);
+      if (decodedEmail !== email) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbiden access" });
+      }
+      const query = { "selecteClass.email": email };
+      console.log(email);
+      const result = await selectClassCollections.find(query).toArray();
+      res.send(result);
+    });
+
+    // deleteSelectedClass;
 
     // get instructors class
     app.get("/instructorsclass", verifyJWT, async (req, res) => {
