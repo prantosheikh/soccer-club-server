@@ -270,7 +270,7 @@ async function run() {
 
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
-      // console.log(body);
+      console.log(payment.newId);
       const Insert = await paymentsCollections.insertOne(payment);
 
       const query = {
@@ -278,13 +278,13 @@ async function run() {
       };
       const Deletec = await selectClassCollections.deleteMany(query);
 
-      res.send(Insert, Deletec);
+      res.send({ Insert, Deletec });
     });
 
-    app.get("/payments", verifyJWT, async (req, res) => {
-      const result = await paymentsCollections.find().toArray();
-      res.send(result);
-    });
+    // app.get("/payments", verifyJWT, async (req, res) => {
+    //   const result = await paymentsCollections.find().toArray();
+    //   res.send(result);
+    // });
 
     //  instructors my classes api
     app.get("/myClasses", verifyJWT, async (req, res) => {
