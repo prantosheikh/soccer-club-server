@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require("stripe")(process.env.payment_secret_key);
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 3000;
@@ -50,6 +51,9 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const usersCollections = client.db("SoccerClubDB").collection("users");
+    const paymentsCollections = client
+      .db("SoccerClubDB")
+      .collection("payments");
     const instructorClassCollections = client
       .db("SoccerClubDB")
       .collection("instructorClass");
@@ -67,13 +71,13 @@ async function run() {
     //   const result = await usersCollections.find().toArray();
     //   res.send(result);
     // });
-    app.get("/instructors", async (req, res) => {
+    app.get("/instructors", verifyJWT, async (req, res) => {
       const result = await usersCollections.find().toArray();
       res.send(result);
     });
 
     // get all all Classes
-    app.get("/allClasses", async (req, res) => {
+    app.get("/allClasses", verifyJWT, async (req, res) => {
       const result = await instructorClassCollections.find().toArray();
       res.send(result);
     });
@@ -142,7 +146,13 @@ async function run() {
       res.send(result);
     });
 
-    // deleteSelectedClass;
+    // Delete Selected Class
+    app.delete("/deleteSelectedClass/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await selectClassCollections.deleteOne(query);
+      res.send(result);
+    });
 
     // get instructors class
     app.get("/instructorsclass", verifyJWT, async (req, res) => {
@@ -218,7 +228,7 @@ async function run() {
     });
 
     // Denied Feedback
-    app.patch("/deniedFeedback/:id", async (req, res) => {
+    app.patch("/deniedFeedback/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const feedback = req.body;
       // console.log(id, feedback);
@@ -234,7 +244,7 @@ async function run() {
     });
 
     // handleDelete Class
-    app.delete("/handleDelete/:id", async (req, res) => {
+    app.delete("/handleDelete/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       // console.log(query);
@@ -242,8 +252,42 @@ async function run() {
       res.send(result);
     });
 
+    // create payment intent
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      // console.log("total price", price, amount);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      // console.log(body);
+      const Insert = await paymentsCollections.insertOne(payment);
+
+      const query = {
+        _id: { $in: payment.newId.map((id) => new ObjectId(id)) },
+      };
+      const Deletec = await selectClassCollections.deleteMany(query);
+
+      res.send(Insert, Deletec);
+    });
+
+    app.get("/payments", verifyJWT, async (req, res) => {
+      const result = await paymentsCollections.find().toArray();
+      res.send(result);
+    });
+
     //  instructors my classes api
-    app.get("/myClasses", async (req, res) => {
+    app.get("/myClasses", verifyJWT, async (req, res) => {
       let query = {};
       const email = req.query.email;
       console.log(email);
