@@ -77,7 +77,7 @@ async function run() {
     });
 
     // get all all Classes
-    app.get("/allClasses", verifyJWT, async (req, res) => {
+    app.get("/allClasses", async (req, res) => {
       const result = await instructorClassCollections.find().toArray();
       res.send(result);
     });
@@ -182,6 +182,59 @@ async function run() {
         classes,
         options
       );
+      res.send(result);
+    });
+
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await usersCollections.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    // instructor
+
+    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false });
+      }
+
+      const query = { email: email };
+      console.log(email);
+
+      const user = await usersCollections.findOne(query);
+      const result = { instructor: user?.role === "instructor" };
+      res.send(result);
+    });
+    app.get("/users/student/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false });
+      }
+
+      const query = { email: email };
+      console.log(email);
+
+      const user = await usersCollections.findOne(query);
+      const result = { student: user?.role === "Student" };
+      res.send(result);
+    });
+
+    // enrolled
+    app.get("/enrolled", async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      const result = await paymentsCollections.find({ email }).toArray();
       res.send(result);
     });
 
